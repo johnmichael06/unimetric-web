@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface text-gray-900;
+    /* Create the subtle dot pattern */
+    background-color: #f9fafb; /* Fallback color */
+    background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+    background-size: 24px 24px; /* Space between dots */
+  }
+}
+
+/* Optional: Add a subtle fade so the pattern isn't too harsh */
+@layer utilities {
+  .bg-fade-bottom {
+    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  }
+}
