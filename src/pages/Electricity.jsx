@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import {
+  Camera,
   AlertTriangle,
   CheckCircle,
   Info,
@@ -9,6 +10,7 @@ import {
   X,
   Save,
   Loader2,
+  History,
 } from "lucide-react";
 
 export default function Electricity() {
@@ -58,7 +60,7 @@ export default function Electricity() {
       .single();
 
     if (lastReading) {
-      setPrevReading(lastReading.current_reading.toString());
+      setPrevReading(lastReading.current_reading);
     }
 
     setLoading(false);
@@ -84,57 +86,33 @@ export default function Electricity() {
   const handleSaveReading = async () => {
     if (!currReading || !prevReading)
       return alert("Please enter readings first");
-
-    const currentVal = parseFloat(currReading);
-    const previousVal = parseFloat(prevReading);
-
-    if (currentVal < previousVal) {
-      return alert(
-        "Error: Current reading cannot be lower than previous reading."
-      );
-    }
-
     setSaving(true);
 
-    // FIXED FORMULA: (Current - Previous) * Rate
-    const finalUsage = currentVal - previousVal;
-    const finalCost = finalUsage * rate;
+    const usage = parseFloat(currReading) - parseFloat(prevReading);
+    const cost = usage * rate;
 
     const { error } = await supabase.from("electricity_readings").insert([
       {
         user_id: user.id,
-        previous_reading: previousVal,
-        current_reading: currentVal,
-        estimated_cost: finalCost,
+        previous_reading: parseFloat(prevReading),
+        current_reading: parseFloat(currReading),
+        estimated_cost: cost,
         reading_date: new Date().toISOString(),
       },
     ]);
 
-    if (error) {
-      alert("Error saving: " + error.message);
-    } else {
-      alert(
-        `Success! Usage: ${finalUsage.toFixed(
-          1
-        )} kWh | Estimated: ₱${finalCost.toFixed(2)}`
-      );
-      setPrevReading(currReading);
+    if (error) alert("Error saving: " + error.message);
+    else {
+      alert("Reading saved! Check your Dashboard.");
+      setPrevReading(currReading); // Move current to previous for next time
       setCurrReading("");
     }
     setSaving(false);
   };
 
-  // --- LIVE CALCULATIONS ---
-  // Ensuring we handle decimals properly for the UI display
-  const currentVal = parseFloat(currReading) || 0;
-  const previousVal = parseFloat(prevReading) || 0;
-
-  // Formula: Current Reading - Previous Reading = Usage
-  const usage = currentVal > previousVal ? currentVal - previousVal : 0;
-
-  // Formula: Usage * Rate = Cost
+  // Calculations
+  const usage = (parseFloat(currReading) || 0) - (parseFloat(prevReading) || 0);
   const calculatedCost = usage * rate;
-
   const difference = (parseFloat(billAmount) || 0) - calculatedCost;
   const percentDiff =
     calculatedCost > 0 ? (difference / calculatedCost) * 100 : 0;
@@ -143,8 +121,8 @@ export default function Electricity() {
     if (!billAmount) return "text-gray-600 bg-gray-50 border-gray-200";
     if (Math.abs(percentDiff) <= 5)
       return "text-brand-600 bg-brand-50 border-brand-200";
-    if (percentDiff > 5) return "text-red-600 bg-red-50 border-red-200";
-    return "text-blue-600 bg-blue-50 border-blue-200";
+    if (percentDiff > 5) return "text-danger-600 bg-red-50 border-red-200";
+    return "text-accent-600 bg-blue-50 border-blue-200";
   };
 
   if (loading)
@@ -156,7 +134,7 @@ export default function Electricity() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* HEADER WITH RATE EDIT */}
+      {/* HEADER WITH DYNAMIC RATE EDIT */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -177,7 +155,6 @@ export default function Electricity() {
               <span className="text-gray-400 font-medium">₱</span>
               <input
                 type="number"
-                step="0.01"
                 className="w-20 border border-brand-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                 value={tempRate}
                 onChange={(e) => setTempRate(e.target.value)}
@@ -236,12 +213,14 @@ export default function Electricity() {
               </label>
               <input
                 type="number"
-                step="0.1"
                 value={prevReading}
                 onChange={(e) => setPrevReading(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                placeholder="e.g. 11677.9"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
+                placeholder="e.g. 1450"
               />
+              <p className="text-xs text-gray-400 mt-1">
+                Auto-filled from last saved reading
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -249,18 +228,17 @@ export default function Electricity() {
               </label>
               <input
                 type="number"
-                step="0.1"
                 value={currReading}
                 onChange={(e) => setCurrReading(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none"
-                placeholder="e.g. 11706.5"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
+                placeholder="e.g. 1582"
               />
             </div>
 
             <button
               onClick={handleSaveReading}
               disabled={saving || !currReading}
-              className="flex items-center justify-center gap-2 w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 font-medium text-sm"
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
             >
               {saving ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -277,7 +255,7 @@ export default function Electricity() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Usage this period:</span>
                 <span className="font-medium text-gray-900">
-                  {usage.toFixed(1)} kWh
+                  {usage > 0 ? usage.toFixed(1) : 0} kWh
                 </span>
               </div>
               <div className="flex justify-between items-end">
@@ -308,9 +286,10 @@ export default function Electricity() {
               </div>
             </div>
 
+            {/* VERIFICATION RESULT */}
             {billAmount && (
               <div
-                className={`p-3 rounded-lg border flex items-start gap-3 ${getStatusColor()}`}
+                className={`p-3 rounded-lg border flex items-start gap-3 animate-fade-in ${getStatusColor()}`}
               >
                 {Math.abs(percentDiff) > 5 ? (
                   <AlertTriangle size={18} className="mt-0.5 shrink-0" />

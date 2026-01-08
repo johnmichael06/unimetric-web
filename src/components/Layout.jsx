@@ -50,6 +50,7 @@ export default function Layout({
     { id: "expenses", label: "Expenses", icon: Wallet },
     { id: "history", label: "History", icon: History },
     { id: "electricity", label: "Electricity & Utilities", icon: Zap },
+    { id: "profile", label: "Account Settings", icon: UserCircle },
   ];
 
   return (
@@ -95,20 +96,28 @@ export default function Layout({
           </nav>
 
           <div className="p-4 border-t border-gray-100">
-            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl">
-              <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400">
+            {/* Add onClick and cursor-pointer to the wrapper div */}
+            <div
+              onClick={() => setActivePage("profile")}
+              className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200 group"
+            >
+              <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 group-hover:text-brand-500">
                 <UserCircle size={20} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">
                   {userProfile?.full_name || "Student"}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {userProfile?.course_year || "Course not set"}
+                <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+                  Edit Profile
                 </p>
               </div>
+              {/* Keep the logout button separate so clicking it doesn't open the profile */}
               <button
-                onClick={handleLogout}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevents clicking Logout from opening Profile
+                  handleLogout();
+                }}
                 className="text-gray-400 hover:text-red-500 transition-colors p-1"
                 title="Log Out"
               >

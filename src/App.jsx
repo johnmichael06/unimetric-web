@@ -7,7 +7,9 @@ import Electricity from "./pages/Electricity";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import History from "./pages/History";
-import Landing from "./pages/Landing"; // <--- Import the new page
+import Landing from "./pages/Landing";
+import ProfileSettings from "./pages/Profile";
+import VerifySuccess from "./pages/VerifySuccess";
 import { Loader2 } from "lucide-react";
 
 function App() {
@@ -15,11 +17,20 @@ function App() {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState("dashboard");
-
-  // New State: Controls if we show Auth screen or Landing page
   const [showAuth, setShowAuth] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
+    // 1. Detect verification hash BEFORE checking session
+    const hash = window.location.hash;
+    if (
+      hash &&
+      (hash.includes("access_token") || hash.includes("type=signup"))
+    ) {
+      setIsVerified(true);
+      window.history.replaceState(null, null, " ");
+    }
+
     checkUser();
     const {
       data: { subscription },
@@ -53,6 +64,9 @@ function App() {
     setLoading(false);
   }
 
+  // --- RENDERING ORDER IS CRITICAL HERE ---
+
+  // 1. Loading screen
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -61,22 +75,34 @@ function App() {
     );
   }
 
-  // LOGIC: If no session...
+  // 2. Verification Success (HIGHEST PRIORITY)
+  // This must be above session/onboarding checks.
+  if (isVerified) {
+    return (
+      <VerifySuccess
+        onContinue={() => {
+          setIsVerified(false);
+          if (!session) setShowAuth(true);
+        }}
+      />
+    );
+  }
+
+  // 3. No Session (Landing/Auth)
   if (!session) {
-    // Show Auth if requested, otherwise show Landing
     return showAuth ? (
-      <Auth onBack={() => setShowAuth(false)} /> // <--- Add this prop!
+      <Auth onBack={() => setShowAuth(false)} />
     ) : (
       <Landing onGetStarted={() => setShowAuth(true)} />
     );
   }
 
-  // LOGIC: If session exists, but no profile -> Onboarding
+  // 4. Incomplete Profile (Onboarding)
   if (userProfile && (!userProfile.full_name || !userProfile.course_year)) {
     return <Onboarding onComplete={() => fetchProfile(session.user.id)} />;
   }
 
-  // LOGIC: Logged in & Profile ready -> Main App
+  // 5. Main App
   const renderPage = () => {
     switch (activePage) {
       case "dashboard":
@@ -87,8 +113,12 @@ function App() {
         return <History />;
       case "electricity":
         return <Electricity />;
+      case "profile":
+        return (
+          <ProfileSettings onUpdate={() => fetchProfile(session.user.id)} />
+        );
       default:
-        return <div>Page not found</div>;
+        return <Dashboard onNavigate={setActivePage} />;
     }
   };
 
