@@ -61,7 +61,6 @@ export default function Goals() {
   const [contribution, setContribution] = useState("");
 
   useEffect(() => {
-    window.supabase = supabase;
     fetchGoals();
   }, []);
 
