@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
+
 import {
   TrendingUp,
   Loader2,
@@ -10,9 +13,10 @@ import {
   X,
   Calendar,
   ArrowUpRight,
-  Target, // Added Target icon
-  Trophy, // Added Trophy icon
-  Plus, // Added Plus icon for empty state
+  Target,
+  Trophy,
+  Plus,
+  HelpCircle,
 } from "lucide-react";
 import {
   BarChart,
@@ -34,13 +38,11 @@ import {
   parseISO,
 } from "date-fns";
 
-// Reusing your Money Formatter
 const formatMoney = (amount) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
     amount
   );
 
-// Icon mapping to match Goals page
 const ICONS = [
   {
     id: "Target",
@@ -67,8 +69,83 @@ export default function Dashboard({ onNavigate }) {
     electricityCost: 0,
     recentTransactions: [],
     chartData: [],
-    goals: [], // <--- Added Goals State
+    goals: [],
   });
+
+  // --- 2. TOUR LOGIC ---
+  useEffect(() => {
+    if (!loading && !localStorage.getItem("hasSeenDashboardTour")) {
+      startTour();
+    }
+  }, [loading]);
+
+  const startTour = () => {
+    const driverObj = driver({
+      showProgress: true,
+      animate: true,
+      allowClose: true,
+      doneBtnText: "Finish",
+      nextBtnText: "Next",
+      prevBtnText: "Back",
+      steps: [
+        {
+          element: "#overview-header",
+          popover: {
+            title: "Welcome to UniMetric!",
+            description:
+              "Here is a quick overview of your financial health. Let me show you around.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#time-range-selector",
+          popover: {
+            title: "Time Views",
+            description:
+              "Switch between Weekly, Monthly, and Yearly views to analyze your spending.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#budget-widget",
+          popover: {
+            title: "Set Your Budget",
+            description:
+              "This is crucial! Click the Pencil icon here to set your spending limit for the month.",
+            side: "bottom",
+            align: "start",
+          },
+        },
+        {
+          element: "#electricity-card",
+          popover: {
+            title: "Electricity Monitor",
+            description:
+              "Keep an eye on your estimated electric bill here. Click it to add new meter readings.",
+            side: "top",
+            align: "start",
+          },
+        },
+        {
+          element: "#goals-section",
+          popover: {
+            title: "Savings Goals",
+            description:
+              "Track your progress towards that new laptop or trip here.",
+            side: "top",
+            align: "start",
+          },
+        },
+      ],
+      onDestroyed: () => {
+        localStorage.setItem("hasSeenDashboardTour", "true");
+      },
+    });
+
+    driverObj.drive();
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -82,7 +159,7 @@ export default function Dashboard({ onNavigate }) {
     if (!user) return;
     setUser(user);
 
-    // 1. Fetch Budgets
+    // Fetch Budgets
     const { data: profile } = await supabase
       .from("profiles")
       .select("monthly_budget, weekly_budget")
@@ -94,7 +171,7 @@ export default function Dashboard({ onNavigate }) {
         weekly: profile.weekly_budget || 0,
       });
 
-    // 2. Date Range Logic
+    // Date Range Logic
     const now = new Date();
     let startDate, endDate;
     if (timeRange === "week") {
@@ -108,7 +185,7 @@ export default function Dashboard({ onNavigate }) {
       endDate = endOfYear(now).toISOString();
     }
 
-    // 3. Fetch Expenses
+    // Fetch Expenses
     const { data: expensesData } = await supabase
       .from("expenses")
       .select("*")
@@ -117,7 +194,7 @@ export default function Dashboard({ onNavigate }) {
       .lte("date", endDate)
       .order("date", { ascending: false });
 
-    // 4. Fetch Electricity
+    // Fetch Electricity
     const { data: elecData } = await supabase
       .from("electricity_readings")
       .select("*")
@@ -125,7 +202,7 @@ export default function Dashboard({ onNavigate }) {
       .order("reading_date", { ascending: false })
       .limit(1);
 
-    // 5. Fetch Goals (Limit to top 3 for dashboard)
+    // Fetch Goals
     const { data: goalsData } = await supabase
       .from("goals")
       .select("*")
@@ -133,7 +210,7 @@ export default function Dashboard({ onNavigate }) {
       .order("created_at", { ascending: false })
       .limit(3);
 
-    // 6. Aggregations
+    // Aggregations
     const totalSpent =
       expensesData?.reduce((sum, item) => sum + item.amount, 0) || 0;
 
@@ -155,7 +232,7 @@ export default function Dashboard({ onNavigate }) {
       electricityCost: elecData?.[0]?.estimated_cost || 0,
       recentTransactions: expensesData?.slice(0, 5) || [],
       chartData,
-      goals: goalsData || [], // <--- Store goals
+      goals: goalsData || [],
     });
     setLoading(false);
   }
@@ -178,7 +255,6 @@ export default function Dashboard({ onNavigate }) {
     }
   };
 
-  // Helper for progress bar
   const getProgress = (current, target) => {
     if (target === 0) return 0;
     const percent = (current / target) * 100;
@@ -203,12 +279,73 @@ export default function Dashboard({ onNavigate }) {
 
   return (
     <div className="space-y-8 pb-10">
+      {/* 3. CUSTOM STYLES FOR THE TOUR BUTTONS */}
+      <style>{`
+        /* Make the NEXT/DONE button Emerald Green */
+        .driver-popover-next-btn {
+          background-color: #059669 !important; /* emerald-600 */
+          color: white !important;
+          border: none !important;
+          text-shadow: none !important;
+          border-radius: 8px !important;
+          padding: 8px 16px !important;
+          font-weight: 600 !important;
+        }
+        .driver-popover-next-btn:hover {
+          background-color: #047857 !important; /* emerald-700 */
+        }
+
+        /* Make the BACK button simpler */
+        .driver-popover-prev-btn {
+          background-color: transparent !important;
+          color: #6B7280 !important; /* gray-500 */
+          border: 1px solid #E5E7EB !important; /* gray-200 */
+          border-radius: 8px !important;
+          padding: 8px 16px !important;
+          font-weight: 600 !important;
+        }
+        .driver-popover-prev-btn:hover {
+          background-color: #F3F4F6 !important; /* gray-100 */
+        }
+        
+        /* Optional: Smooth the popover corners */
+        .driver-popover {
+          border-radius: 12px !important;
+          padding: 16px !important;
+        }
+        
+        /* Fix title font */
+        .driver-popover-title {
+          font-family: inherit !important;
+          font-weight: 700 !important;
+          font-size: 1.1rem !important;
+          margin-bottom: 8px !important;
+        }
+        .driver-popover-description {
+          font-family: inherit !important;
+          color: #4B5563 !important; /* gray-600 */
+          margin-bottom: 16px !important;
+        }
+      `}</style>
+
       {/* --- HEADER --- */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Overview
-          </h1>
+        <div id="overview-header">
+          {" "}
+          {/* ID FOR TOUR */}
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+              Overview
+            </h1>
+            {/* Manual Tour Trigger */}
+            <button
+              onClick={startTour}
+              className="text-gray-400 hover:text-brand-600 transition-colors"
+              title="Start Tour"
+            >
+              <HelpCircle size={20} />
+            </button>
+          </div>
           <p className="text-gray-500 mt-1">
             {timeRange === "week"
               ? "Spending for this week (Mon-Sun)."
@@ -220,7 +357,12 @@ export default function Dashboard({ onNavigate }) {
 
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Segmented Control */}
-          <div className="bg-gray-100/80 p-1 rounded-xl flex items-center">
+          <div
+            id="time-range-selector"
+            className="bg-gray-100/80 p-1 rounded-xl flex items-center"
+          >
+            {" "}
+            {/* ID FOR TOUR */}
             {["week", "month", "year"].map((t) => (
               <button
                 key={t}
@@ -239,6 +381,7 @@ export default function Dashboard({ onNavigate }) {
           {/* Budget Widget */}
           {showBudget && (
             <div
+              id="budget-widget" // <--- ID FOR TOUR: HIGHLIGHTS MONTHLY LIMIT
               className={`relative group bg-white border border-gray-200 rounded-xl px-4 py-2 min-w-[180px] shadow-sm transition-all ${
                 isEditingBudget
                   ? "ring-2 ring-brand-500 border-transparent"
@@ -319,7 +462,12 @@ export default function Dashboard({ onNavigate }) {
         </div>
 
         {/* Electricity */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div
+          id="electricity-card"
+          className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+        >
+          {" "}
+          {/* ID FOR TOUR */}
           <div className="flex justify-between items-start mb-4">
             <div className="p-3 bg-amber-50 rounded-xl text-amber-500">
               <Zap size={24} />
@@ -502,8 +650,10 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
 
-      {/* --- NEW: GOALS OVERVIEW SECTION --- */}
-      <div>
+      {/* --- GOALS OVERVIEW SECTION --- */}
+      <div id="goals-section">
+        {" "}
+        {/* ID FOR TOUR */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-gray-900">Your Goals</h3>
           <button
@@ -513,7 +663,6 @@ export default function Dashboard({ onNavigate }) {
             View all goals
           </button>
         </div>
-
         {metrics.goals.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {metrics.goals.map((goal) => {
@@ -526,7 +675,7 @@ export default function Dashboard({ onNavigate }) {
               return (
                 <div
                   key={goal.id}
-                  onClick={() => onNavigate("goals")} // Clicking takes you to goals page
+                  onClick={() => onNavigate("goals")}
                   className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-4">
@@ -564,7 +713,6 @@ export default function Dashboard({ onNavigate }) {
             })}
           </div>
         ) : (
-          /* Empty State for Goals in Dashboard */
           <div
             onClick={() => onNavigate("goals")}
             className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-brand-300 hover:bg-brand-50/10 transition-all group"

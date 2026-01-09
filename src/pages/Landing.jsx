@@ -41,7 +41,10 @@ export default function Landing({ onGetStarted }) {
       </nav>
 
       {/* --- HERO SECTION --- */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-40"></div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
           {/* LEFT: Copywriting */}
           <div className="max-w-2xl">
@@ -52,7 +55,22 @@ export default function Landing({ onGetStarted }) {
 
             <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-gray-900 mb-6 leading-[1.1]">
               Stop guessing where your{" "}
-              <span className="text-brand-600">allowance</span> went.
+              <span className="text-brand-600 relative inline-block">
+                allowance
+                <svg
+                  className="absolute w-full h-3 -bottom-1 left-0 text-brand-200 -z-10"
+                  viewBox="0 0 100 10"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M0 5 Q 50 10 100 5"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="none"
+                  />
+                </svg>
+              </span>{" "}
+              went.
             </h1>
 
             <p className="text-lg text-gray-500 mb-8 leading-relaxed max-w-lg">
@@ -75,7 +93,7 @@ export default function Landing({ onGetStarted }) {
                       className="w-10 h-10 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center overflow-hidden"
                     >
                       <img
-                        src={`https://i.pravatar.cc/100?img=${i + 10}`}
+                        src={`https://i.pravatar.cc/100?img=${i + 55}`}
                         alt="User"
                       />
                     </div>
@@ -110,7 +128,7 @@ export default function Landing({ onGetStarted }) {
 
           {/* RIGHT: Mockup */}
           <div className="relative perspective-1000 hidden lg:block">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-brand-100 to-transparent rounded-full blur-3xl -z-10 opacity-60"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-brand-100 to-transparent rounded-full blur-3xl -z-10 opacity-60 animate-pulse"></div>
 
             <div className="relative bg-white rounded-2xl border border-gray-200 shadow-2xl shadow-gray-200/50 p-2 transform rotate-y-12 rotate-x-6 hover:rotate-0 transition-transform duration-700 ease-out">
               <div className="h-8 bg-gray-50 border-b border-gray-100 rounded-t-xl flex items-center px-4 gap-2">
@@ -159,7 +177,11 @@ export default function Landing({ onGetStarted }) {
                 </div>
               </div>
 
-              <div className="absolute -right-12 top-20 bg-white p-4 rounded-xl shadow-xl border border-gray-100 flex items-center gap-3 animate-bounce duration-[3000ms]">
+              {/* Floating Element 1 */}
+              <div
+                className="absolute -right-12 top-20 bg-white p-4 rounded-xl shadow-xl border border-gray-100 flex items-center gap-3 animate-bounce"
+                style={{ animationDuration: "3s" }}
+              >
                 <div className="p-2 bg-green-100 text-green-600 rounded-lg">
                   <CheckCircle2 size={20} />
                 </div>
@@ -173,7 +195,11 @@ export default function Landing({ onGetStarted }) {
                 </div>
               </div>
 
-              <div className="absolute -left-8 bottom-12 bg-white p-4 rounded-xl shadow-xl border border-gray-100 flex items-center gap-3 animate-pulse">
+              {/* Floating Element 2 */}
+              <div
+                className="absolute -left-8 bottom-12 bg-white p-4 rounded-xl shadow-xl border border-gray-100 flex items-center gap-3 animate-bounce"
+                style={{ animationDuration: "4s" }}
+              >
                 <div className="p-2 bg-red-100 text-red-600 rounded-lg">
                   <ShieldCheck size={20} />
                 </div>
@@ -192,8 +218,11 @@ export default function Landing({ onGetStarted }) {
       </section>
 
       {/* --- FEATURES GRID --- */}
-      <section className="py-24 bg-white border-t border-gray-100 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+      <section className="py-24 bg-white border-t border-gray-100 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Decorative Blobs */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-brand-50 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 opacity-50"></div>
+
+        <div className="max-w-6xl mx-auto relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Everything you need to survive college
@@ -293,7 +322,7 @@ export default function Landing({ onGetStarted }) {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Trusted by students at AdDU
+              Trusted by students
             </h2>
             <p className="text-gray-500">
               See why your classmates are switching to UniMetric.
@@ -320,12 +349,12 @@ export default function Landing({ onGetStarted }) {
             ].map((t, i) => (
               <div
                 key={i}
-                className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100"
+                className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
               >
                 <Quote className="text-brand-200 mb-4" size={32} />
                 <p className="text-gray-600 mb-6 leading-relaxed">"{t.text}"</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
+                  <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center font-bold text-brand-600">
                     {t.name[0]}
                   </div>
                   <div>
