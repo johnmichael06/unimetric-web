@@ -403,7 +403,7 @@ export default function Landing({ onGetStarted }) {
           <span>UniMetric</span>
         </div>
         <p className="text-gray-500 text-sm mb-8">
-          © 2026 UniMetric. Built for students in Davao City.
+          © 2026 UniMetric. Built for students.
         </p>
         <div className="flex justify-center gap-6 text-sm font-medium text-gray-600">
           <a href="#" className="hover:text-brand-600 transition-colors">

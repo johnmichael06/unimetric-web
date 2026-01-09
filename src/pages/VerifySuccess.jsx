@@ -29,7 +29,7 @@ export default function VerifySuccess({ onContinue }) {
           onClick={onContinue}
           className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20 active:scale-[0.98] flex justify-center items-center gap-2"
         >
-          Go to Sign In <ArrowRight size={18} />
+          Continue <ArrowRight size={18} />
         </button>
 
         <div className="mt-8 flex items-center justify-center gap-2 text-gray-400">
