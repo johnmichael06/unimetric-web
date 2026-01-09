@@ -3,13 +3,17 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
 
-// 1. IMPORT THIS
+// Imports
 import { Analytics } from "@vercel/analytics/react";
+import BrowserGuard from "./components/BrowserGuard"; // <--- Import the Guard
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
-    {/* 2. ADD COMPONENT HERE */}
+    {/* Wrap the App inside the BrowserGuard */}
+    <BrowserGuard>
+      <App />
+    </BrowserGuard>
+
     <Analytics />
   </React.StrictMode>
 );
