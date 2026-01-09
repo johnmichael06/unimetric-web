@@ -11,6 +11,7 @@ import Landing from "./pages/Landing";
 import ProfileSettings from "./pages/Profile";
 import VerifySuccess from "./pages/VerifySuccess";
 import { Loader2 } from "lucide-react";
+import Goals from "./pages/Goals";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -113,6 +114,8 @@ function App() {
         return <History />;
       // In App.jsx inside renderPage():
 
+      case "goals":
+        return <Goals />;
       case "electricity":
         return <Electricity onNavigate={setActivePage} />; // <--- ADD THIS PROP
       case "profile":

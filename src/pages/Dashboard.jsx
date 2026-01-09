@@ -10,6 +10,9 @@ import {
   X,
   Calendar,
   ArrowUpRight,
+  Target, // Added Target icon
+  Trophy, // Added Trophy icon
+  Plus, // Added Plus icon for empty state
 } from "lucide-react";
 import {
   BarChart,
@@ -31,15 +34,29 @@ import {
   parseISO,
 } from "date-fns";
 
+// Reusing your Money Formatter
 const formatMoney = (amount) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
     amount
   );
 
+// Icon mapping to match Goals page
+const ICONS = [
+  {
+    id: "Target",
+    icon: Target,
+    bg: "bg-emerald-100",
+    text: "text-emerald-600",
+  },
+  { id: "Travel", icon: TrendingUp, bg: "bg-blue-100", text: "text-blue-600" },
+  { id: "Tech", icon: Zap, bg: "bg-purple-100", text: "text-purple-600" },
+  { id: "Trophy", icon: Trophy, bg: "bg-amber-100", text: "text-amber-600" },
+];
+
 export default function Dashboard({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const [timeRange, setTimeRange] = useState("month"); // 'week', 'month', 'year'
+  const [timeRange, setTimeRange] = useState("month");
 
   const [budgets, setBudgets] = useState({ monthly: 0, weekly: 0 });
   const [isEditingBudget, setIsEditingBudget] = useState(false);
@@ -50,6 +67,7 @@ export default function Dashboard({ onNavigate }) {
     electricityCost: 0,
     recentTransactions: [],
     chartData: [],
+    goals: [], // <--- Added Goals State
   });
 
   useEffect(() => {
@@ -64,7 +82,7 @@ export default function Dashboard({ onNavigate }) {
     if (!user) return;
     setUser(user);
 
-    // Fetch Budgets
+    // 1. Fetch Budgets
     const { data: profile } = await supabase
       .from("profiles")
       .select("monthly_budget, weekly_budget")
@@ -76,7 +94,7 @@ export default function Dashboard({ onNavigate }) {
         weekly: profile.weekly_budget || 0,
       });
 
-    // Date Range Logic
+    // 2. Date Range Logic
     const now = new Date();
     let startDate, endDate;
     if (timeRange === "week") {
@@ -90,7 +108,7 @@ export default function Dashboard({ onNavigate }) {
       endDate = endOfYear(now).toISOString();
     }
 
-    // Fetch Expenses
+    // 3. Fetch Expenses
     const { data: expensesData } = await supabase
       .from("expenses")
       .select("*")
@@ -99,7 +117,7 @@ export default function Dashboard({ onNavigate }) {
       .lte("date", endDate)
       .order("date", { ascending: false });
 
-    // Fetch Electricity
+    // 4. Fetch Electricity
     const { data: elecData } = await supabase
       .from("electricity_readings")
       .select("*")
@@ -107,7 +125,15 @@ export default function Dashboard({ onNavigate }) {
       .order("reading_date", { ascending: false })
       .limit(1);
 
-    // Aggregations
+    // 5. Fetch Goals (Limit to top 3 for dashboard)
+    const { data: goalsData } = await supabase
+      .from("goals")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    // 6. Aggregations
     const totalSpent =
       expensesData?.reduce((sum, item) => sum + item.amount, 0) || 0;
 
@@ -129,6 +155,7 @@ export default function Dashboard({ onNavigate }) {
       electricityCost: elecData?.[0]?.estimated_cost || 0,
       recentTransactions: expensesData?.slice(0, 5) || [],
       chartData,
+      goals: goalsData || [], // <--- Store goals
     });
     setLoading(false);
   }
@@ -151,6 +178,13 @@ export default function Dashboard({ onNavigate }) {
     }
   };
 
+  // Helper for progress bar
+  const getProgress = (current, target) => {
+    if (target === 0) return 0;
+    const percent = (current / target) * 100;
+    return Math.min(percent, 100);
+  };
+
   if (loading)
     return (
       <div className="py-32 flex items-center justify-center">
@@ -168,8 +202,8 @@ export default function Dashboard({ onNavigate }) {
       : 0;
 
   return (
-    <div className="space-y-8">
-      {/* --- POLISHED HEADER --- */}
+    <div className="space-y-8 pb-10">
+      {/* --- HEADER --- */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
@@ -185,7 +219,7 @@ export default function Dashboard({ onNavigate }) {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          {/* Custom Segmented Control */}
+          {/* Segmented Control */}
           <div className="bg-gray-100/80 p-1 rounded-xl flex items-center">
             {["week", "month", "year"].map((t) => (
               <button
@@ -205,14 +239,11 @@ export default function Dashboard({ onNavigate }) {
           {/* Budget Widget */}
           {showBudget && (
             <div
-              className={`
-              relative group bg-white border border-gray-200 rounded-xl px-4 py-2 min-w-[180px] shadow-sm transition-all
-              ${
+              className={`relative group bg-white border border-gray-200 rounded-xl px-4 py-2 min-w-[180px] shadow-sm transition-all ${
                 isEditingBudget
                   ? "ring-2 ring-brand-500 border-transparent"
                   : "hover:border-brand-300"
-              }
-            `}
+              }`}
             >
               {isEditingBudget ? (
                 <div className="flex items-center justify-between h-full">
@@ -469,6 +500,87 @@ export default function Dashboard({ onNavigate }) {
             View All History
           </button>
         </div>
+      </div>
+
+      {/* --- NEW: GOALS OVERVIEW SECTION --- */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-gray-900">Your Goals</h3>
+          <button
+            onClick={() => onNavigate("goals")}
+            className="text-sm font-medium text-brand-600 hover:text-brand-700 hover:underline"
+          >
+            View all goals
+          </button>
+        </div>
+
+        {metrics.goals.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {metrics.goals.map((goal) => {
+              const percent = getProgress(
+                goal.current_amount,
+                goal.target_amount
+              );
+              const IconObj = ICONS.find((i) => i.id === goal.icon) || ICONS[0];
+
+              return (
+                <div
+                  key={goal.id}
+                  onClick={() => onNavigate("goals")} // Clicking takes you to goals page
+                  className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center ${IconObj.bg} ${IconObj.text}`}
+                      >
+                        <IconObj.icon size={20} />
+                      </div>
+                      <h4 className="font-bold text-gray-900">{goal.name}</h4>
+                    </div>
+                    <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
+                      {Math.round(percent)}%
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium text-gray-900">
+                        {formatMoney(goal.current_amount)}
+                      </span>
+                      <span className="text-gray-400">
+                        of {formatMoney(goal.target_amount)}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-brand-500 h-full rounded-full transition-all duration-1000"
+                        style={{ width: `${percent}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Empty State for Goals in Dashboard */
+          <div
+            onClick={() => onNavigate("goals")}
+            className="border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:border-brand-300 hover:bg-brand-50/10 transition-all group"
+          >
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-white group-hover:shadow-sm">
+              <Plus
+                size={24}
+                className="text-gray-400 group-hover:text-brand-500"
+              />
+            </div>
+            <h4 className="font-bold text-gray-900">Start Saving</h4>
+            <p className="text-sm text-gray-500 mt-1">
+              Create your first savings goal
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
