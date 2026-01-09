@@ -121,6 +121,7 @@ function App() {
         return <Dashboard onNavigate={setActivePage} />;
     }
   };
+  // Trigger update
 
   return (
     <Layout
