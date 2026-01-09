@@ -131,7 +131,7 @@ function App() {
   return (
     <Layout
       activePage={activePage}
-      setActivePage={setActivePage}
+      setActivePage={setActivePage} //pushing
       userProfile={userProfile}
     >
       {renderPage()}
