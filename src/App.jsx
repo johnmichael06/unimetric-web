@@ -111,8 +111,10 @@ function App() {
         return <Expenses />;
       case "history":
         return <History />;
+      // In App.jsx inside renderPage():
+
       case "electricity":
-        return <Electricity />;
+        return <Electricity onNavigate={setActivePage} />; // <--- ADD THIS PROP
       case "profile":
         return (
           <ProfileSettings onUpdate={() => fetchProfile(session.user.id)} />

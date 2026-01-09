@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import {
   Plus,
-  Search,
   Coffee,
   Bus,
   BookOpen,
@@ -53,12 +52,10 @@ export default function Expenses() {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State for Add/Edit Modal
+  // Modals state
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
-
-  // State for Delete Confirmation Modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -69,7 +66,6 @@ export default function Expenses() {
     description: "",
   });
 
-  // --- FETCH DATA ---
   const fetchExpenses = async () => {
     setLoading(true);
     const {
@@ -91,7 +87,6 @@ export default function Expenses() {
     fetchExpenses();
   }, []);
 
-  // --- HANDLE SUBMIT (ADD OR UPDATE) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     const {
@@ -108,7 +103,6 @@ export default function Expenses() {
     };
 
     let error;
-
     if (isEditing) {
       const { error: updateError } = await supabase
         .from("expenses")
@@ -134,7 +128,6 @@ export default function Expenses() {
     }
   };
 
-  // --- DELETE LOGIC ---
   const initiateDelete = (id) => {
     setExpenseToDelete(id);
     setShowDeleteModal(true);
@@ -143,12 +136,10 @@ export default function Expenses() {
   const confirmDelete = async () => {
     if (!expenseToDelete) return;
     setIsDeleting(true);
-
     const { error } = await supabase
       .from("expenses")
       .delete()
       .eq("id", expenseToDelete);
-
     if (!error) {
       setExpenses(expenses.filter((item) => item.id !== expenseToDelete));
       setShowDeleteModal(false);
@@ -159,7 +150,6 @@ export default function Expenses() {
     setIsDeleting(false);
   };
 
-  // --- HELPER FUNCTIONS ---
   const openAddModal = () => {
     setFormData({ amount: "", categoryId: "Food", description: "" });
     setIsEditing(false);
@@ -187,7 +177,7 @@ export default function Expenses() {
     CATEGORIES.find((c) => c.id === id) || CATEGORIES[0];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 sm:pb-0">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -198,7 +188,7 @@ export default function Expenses() {
         </div>
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
+          className="flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-3 rounded-xl text-sm font-semibold transition-all shadow-sm active:scale-95 w-full sm:w-auto"
         >
           <Plus size={18} />
           Add Expense
@@ -212,98 +202,120 @@ export default function Expenses() {
             <Loader2 className="animate-spin mr-2" /> Loading...
           </div>
         ) : (
-          <table className="w-full text-left">
-            <thead className="bg-gray-50/50 border-b border-gray-100">
-              <tr>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">
-                  Amount
-                </th>
-                <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {expenses.map((expense) => {
-                const category = getCategory(expense.category);
-                return (
-                  <tr
-                    key={expense.id}
-                    className="hover:bg-gray-50/80 transition-colors group"
-                  >
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(expense.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`p-2 rounded-lg ${category.color} bg-opacity-10`}
-                        >
-                          {React.createElement(category.icon, { size: 16 })}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50/50 border-b border-gray-100">
+                <tr>
+                  {/* HIDDEN ON MOBILE */}
+                  <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Category
+                  </th>
+                  {/* HIDDEN ON MOBILE */}
+                  <th className="hidden sm:table-cell px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">
+                    Amount
+                  </th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {expenses.map((expense) => {
+                  const category = getCategory(expense.category);
+                  const dateStr = new Date(expense.date).toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "short",
+                      day: "numeric",
+                    }
+                  );
+
+                  return (
+                    <tr
+                      key={expense.id}
+                      className="hover:bg-gray-50/80 transition-colors group"
+                    >
+                      {/* DESKTOP DATE */}
+                      <td className="hidden sm:table-cell px-6 py-4 text-sm text-gray-500">
+                        {dateStr}
+                      </td>
+
+                      {/* CATEGORY (With Mobile Date) */}
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`p-2 rounded-lg ${category.color} bg-opacity-10 shrink-0`}
+                          >
+                            {React.createElement(category.icon, { size: 16 })}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-700">
+                              {category.label}
+                            </span>
+                            {/* Mobile-only Date */}
+                            <span className="text-xs text-gray-400 sm:hidden">
+                              {dateStr} • {expense.description || "No desc"}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {category.label}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {expense.description}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right font-mono">
-                      ₱{expense.amount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => openEditModal(expense)}
-                          className="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          onClick={() => initiateDelete(expense.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      </td>
+
+                      {/* DESKTOP DESCRIPTION */}
+                      <td className="hidden sm:table-cell px-6 py-4 text-sm text-gray-600">
+                        {expense.description}
+                      </td>
+
+                      {/* AMOUNT */}
+                      <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900 text-right font-mono">
+                        ₱{expense.amount.toFixed(2)}
+                      </td>
+
+                      {/* ACTIONS */}
+                      <td className="px-4 sm:px-6 py-4 text-right">
+                        <div className="flex justify-end gap-1 sm:gap-2">
+                          <button
+                            onClick={() => openEditModal(expense)}
+                            className="p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => initiateDelete(expense.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {expenses.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="px-6 py-12 text-center text-gray-400"
+                    >
+                      No expenses yet.
                     </td>
                   </tr>
-                );
-              })}
-              {expenses.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="px-6 py-12 text-center text-gray-400"
-                  >
-                    No expenses yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* ADD / EDIT MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all scale-100 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-in">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900">
                 {isEditing ? "Edit Expense" : "New Expense"}
@@ -344,7 +356,7 @@ export default function Expenses() {
                   Category
                 </label>
                 <select
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all bg-white"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none bg-white"
                   value={formData.categoryId}
                   onChange={(e) =>
                     setFormData({ ...formData, categoryId: e.target.value })
@@ -367,7 +379,7 @@ export default function Expenses() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -378,7 +390,7 @@ export default function Expenses() {
 
               <button
                 type="submit"
-                className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/30 active:scale-[0.98]"
+                className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-all shadow-lg active:scale-[0.98]"
               >
                 {isEditing ? "Save Changes" : "Add Expense"}
               </button>
@@ -387,36 +399,33 @@ export default function Expenses() {
         </div>
       )}
 
-      {/* NEW DELETE CONFIRMATION MODAL */}
+      {/* DELETE MODAL */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl transform transition-all scale-100 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-fade-in">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-1">
                 <AlertTriangle className="text-red-600" size={24} />
               </div>
-
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
                   Delete Expense?
                 </h3>
                 <p className="text-sm text-gray-500 mt-2">
-                  Are you sure you want to remove this expense? This action
-                  cannot be undone.
+                  This action cannot be undone.
                 </p>
               </div>
-
               <div className="grid grid-cols-2 gap-3 w-full mt-2">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="w-full py-2.5 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  className="w-full py-2.5 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
                   disabled={isDeleting}
-                  className="w-full py-2.5 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-500/30 flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 flex items-center justify-center gap-2"
                 >
                   {isDeleting ? (
                     <Loader2 size={16} className="animate-spin" />

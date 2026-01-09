@@ -11,9 +11,11 @@ import {
   Save,
   Loader2,
   History,
+  Zap, // Added Zap for the modal icon
 } from "lucide-react";
 
-export default function Electricity() {
+// 1. ACCEPT THE PROP HERE
+export default function Electricity({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
@@ -27,6 +29,9 @@ export default function Electricity() {
   const [currReading, setCurrReading] = useState("");
   const [billAmount, setBillAmount] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // 2. NEW STATE FOR MODAL
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Load Data
   useEffect(() => {
@@ -101,9 +106,11 @@ export default function Electricity() {
       },
     ]);
 
-    if (error) alert("Error saving: " + error.message);
-    else {
-      alert("Reading saved! Check your Dashboard.");
+    if (error) {
+      alert("Error saving: " + error.message);
+    } else {
+      // 3. SHOW MODAL INSTEAD OF ALERT
+      setShowSuccessModal(true);
       setPrevReading(currReading); // Move current to previous for next time
       setCurrReading("");
     }
@@ -314,6 +321,40 @@ export default function Electricity() {
           </div>
         </div>
       </div>
+
+      {/* 4. SUCCESS MODAL */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-fade-in text-center">
+            <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Zap className="text-brand-600" size={32} />
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Reading Saved!
+            </h3>
+            <p className="text-gray-500 mb-6 text-sm">
+              Your electricity reading has been recorded. We've updated your
+              cost estimate on the dashboard.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => onNavigate && onNavigate("dashboard")}
+                className="w-full bg-brand-600 text-white py-3 rounded-xl font-bold hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/30"
+              >
+                Go to Dashboard
+              </button>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-all"
+              >
+                Stay Here
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
