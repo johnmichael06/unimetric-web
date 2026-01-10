@@ -73,9 +73,24 @@ export default function Dashboard({ onNavigate }) {
   });
 
   // --- 2. TOUR LOGIC ---
+  // --- 2. TOUR LOGIC ---
   useEffect(() => {
-    if (!loading && !localStorage.getItem("hasSeenDashboardTour")) {
-      startTour();
+    // 1. Check if loading is finished
+    if (!loading) {
+      // 2. Check if user has already seen the tour
+      const hasSeenTour = localStorage.getItem("hasSeenDashboardTour");
+
+      if (!hasSeenTour) {
+        // 3. THE FIX: Add a small delay (500ms) to ensure DOM is ready
+        const timer = setTimeout(() => {
+          // Double check that the element actually exists before driving
+          if (document.getElementById("overview-header")) {
+            startTour();
+          }
+        }, 800);
+
+        return () => clearTimeout(timer); // Cleanup
+      }
     }
   }, [loading]);
 
