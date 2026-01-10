@@ -73,26 +73,41 @@ export default function Dashboard({ onNavigate }) {
   });
 
   // --- 2. TOUR LOGIC ---
-  // --- 2. TOUR LOGIC ---
+
+  // --- ROBUST TOUR LOGIC ---
+  const [tourStarted, setTourStarted] = useState(false);
+
   useEffect(() => {
-    // 1. Check if loading is finished
-    if (!loading) {
-      // 2. Check if user has already seen the tour
-      const hasSeenTour = localStorage.getItem("hasSeenDashboardTour");
+    // 1. Safety Checks
+    if (loading || tourStarted) return;
 
-      if (!hasSeenTour) {
-        // 3. THE FIX: Add a small delay (500ms) to ensure DOM is ready
-        const timer = setTimeout(() => {
-          // Double check that the element actually exists before driving
-          if (document.getElementById("overview-header")) {
-            startTour();
-          }
-        }, 800);
+    // 2. Check if user already saw it
+    const hasSeenTour = localStorage.getItem("hasSeenDashboardTour");
+    if (hasSeenTour) return;
 
-        return () => clearTimeout(timer); // Cleanup
+    // 3. THE FIX: Look for the element every 500ms
+    const checkInterval = setInterval(() => {
+      const element = document.getElementById("overview-header");
+
+      // Check if element exists AND is actually visible (has height/width)
+      if (element && element.offsetParent !== null) {
+        startTour();
+        setTourStarted(true); // Prevent double-firing
+        clearInterval(checkInterval); // Stop checking
       }
-    }
-  }, [loading]);
+    }, 500);
+
+    // 4. Stop checking after 5 seconds (to save memory)
+    const timeoutFallback = setTimeout(() => {
+      clearInterval(checkInterval);
+    }, 5000);
+
+    // Cleanup when component unmounts
+    return () => {
+      clearInterval(checkInterval);
+      clearTimeout(timeoutFallback);
+    };
+  }, [loading, tourStarted]);
 
   const startTour = () => {
     const driverObj = driver({
