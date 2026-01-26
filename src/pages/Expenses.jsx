@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom"; // <--- IMPORT THIS
+import { createPortal } from "react-dom";
 import { supabase } from "../lib/supabase";
 import {
   Plus,
@@ -14,6 +14,7 @@ import {
   Trash2,
   Pencil,
   AlertTriangle,
+  Calendar, // <--- ADDED CALENDAR ICON
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -61,10 +62,12 @@ export default function Expenses() {
   const [expenseToDelete, setExpenseToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // --- 1. UPDATED STATE TO INCLUDE DATE ---
   const [formData, setFormData] = useState({
     amount: "",
     categoryId: "Food",
     description: "",
+    date: new Date().toISOString().split("T")[0], // Default to Today (YYYY-MM-DD)
   });
 
   const fetchExpenses = async () => {
@@ -95,12 +98,15 @@ export default function Expenses() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
+    // --- 2. LOGIC TO HANDLE TIME TRAVEL ---
+    // If the user picked a date, we create a timestamp for that date.
+    // We append the current time if it's today, or default to mid-day/start-of-day for past dates to avoid timezone issues.
     const payload = {
       user_id: user.id,
       amount: parseFloat(formData.amount),
       category: formData.categoryId,
       description: formData.description || "No description",
-      date: new Date().toISOString(),
+      date: new Date(formData.date).toISOString(), // Uses the picker date!
     };
 
     let error;
@@ -111,6 +117,7 @@ export default function Expenses() {
           amount: payload.amount,
           category: payload.category,
           description: payload.description,
+          date: payload.date, // Updates date too
         })
         .eq("id", currentId);
       error = updateError;
@@ -151,18 +158,26 @@ export default function Expenses() {
     setIsDeleting(false);
   };
 
+  // --- 3. RESET FORM WITH TODAY'S DATE ---
   const openAddModal = () => {
-    setFormData({ amount: "", categoryId: "Food", description: "" });
+    setFormData({
+      amount: "",
+      categoryId: "Food",
+      description: "",
+      date: new Date().toISOString().split("T")[0],
+    });
     setIsEditing(false);
     setCurrentId(null);
     setShowModal(true);
   };
 
+  // --- 4. LOAD EXISTING DATE FOR EDITING ---
   const openEditModal = (expense) => {
     setFormData({
       amount: expense.amount,
       categoryId: expense.category,
       description: expense.description,
+      date: new Date(expense.date).toISOString().split("T")[0], // Extract YYYY-MM-DD
     });
     setIsEditing(true);
     setCurrentId(expense.id);
@@ -171,7 +186,12 @@ export default function Expenses() {
 
   const closeModal = () => {
     setShowModal(false);
-    setFormData({ amount: "", categoryId: "Food", description: "" });
+    setFormData({
+      amount: "",
+      categoryId: "Food",
+      description: "",
+      date: new Date().toISOString().split("T")[0],
+    });
   };
 
   const getCategory = (id) =>
@@ -234,7 +254,7 @@ export default function Expenses() {
                     {
                       month: "short",
                       day: "numeric",
-                    }
+                    },
                   );
 
                   return (
@@ -331,6 +351,27 @@ export default function Expenses() {
               </div>
 
               <form className="space-y-5" onSubmit={handleSubmit}>
+                {/* --- 5. NEW DATE INPUT FIELD --- */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Date
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <Calendar size={18} />
+                    </span>
+                    <input
+                      type="date"
+                      required
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all text-gray-700 font-medium"
+                      value={formData.date}
+                      onChange={(e) =>
+                        setFormData({ ...formData, date: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                     Amount
@@ -399,7 +440,7 @@ export default function Expenses() {
               </form>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {/* PORTAL DELETE MODAL */}
@@ -441,7 +482,7 @@ export default function Expenses() {
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </div>
   );

@@ -13,6 +13,8 @@ import {
   X,
   Calendar,
   ArrowUpRight,
+  ChevronLeft, // <--- ADD THIS
+  ChevronRight,
   Target,
   Trophy,
   Plus,
@@ -40,7 +42,7 @@ import {
 
 const formatMoney = (amount) =>
   new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(
-    amount
+    amount,
   );
 
 const ICONS = [
@@ -59,6 +61,8 @@ export default function Dashboard({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [timeRange, setTimeRange] = useState("month");
+  const [chartPage, setChartPage] = useState(0); // 0 = Most Recent Data
+  const ITEMS_PER_PAGE = 5;
 
   const [budgets, setBudgets] = useState({ monthly: 0, weekly: 0 });
   const [isEditingBudget, setIsEditingBudget] = useState(false);
@@ -108,6 +112,21 @@ export default function Dashboard({ onNavigate }) {
       clearTimeout(timeoutFallback);
     };
   }, [loading, tourStarted]);
+
+  // --- CHART PAGINATION LOGIC ---
+  // 1. Get total number of days recorded
+  const totalItems = metrics.chartData.length;
+
+  // 2. Calculate the slice window (From the end of the array backwards)
+  const endIndex = totalItems - chartPage * ITEMS_PER_PAGE;
+  const startIndex = Math.max(0, endIndex - ITEMS_PER_PAGE);
+
+  // 3. Get the actual 5 items to show
+  const visibleChartData = metrics.chartData.slice(startIndex, endIndex);
+
+  // 4. Control flags
+  const canGoBack = startIndex > 0; // Can we see older data? (Left)
+  const canGoForward = chartPage > 0; // Can we see newer data? (Right)
 
   const startTour = () => {
     const driverObj = driver({
@@ -380,8 +399,8 @@ export default function Dashboard({ onNavigate }) {
             {timeRange === "week"
               ? "Spending for this week (Mon-Sun)."
               : timeRange === "month"
-              ? "Spending for this current month."
-              : "Yearly spending summary."}
+                ? "Spending for this current month."
+                : "Yearly spending summary."}
           </p>
         </div>
 
@@ -569,16 +588,58 @@ export default function Dashboard({ onNavigate }) {
       {/* --- CHART & LISTS --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">
-            Activity Trend
-          </h3>
-          <div className="h-72">
-            {metrics.chartData.length > 0 ? (
+        <div className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-gray-100 shadow-sm">
+          {/* HEADER WITH CONTROLS */}
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold text-gray-900">Activity Trend</h3>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* PAGINATION BUTTONS */}
+              <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
+                <button
+                  onClick={() => setChartPage((prev) => prev + 1)}
+                  disabled={!canGoBack}
+                  className={`p-1.5 rounded-md transition-all ${
+                    canGoBack
+                      ? "text-gray-600 hover:bg-white hover:shadow-sm"
+                      : "text-gray-300 cursor-not-allowed"
+                  }`}
+                >
+                  <ChevronLeft size={16} /> {/* Smaller icon on mobile */}
+                </button>
+                <div className="w-px h-4 bg-gray-200 mx-0.5"></div>
+                <button
+                  onClick={() => setChartPage((prev) => prev - 1)}
+                  disabled={!canGoForward}
+                  className={`p-1.5 rounded-md transition-all ${
+                    canGoForward
+                      ? "text-gray-600 hover:bg-white hover:shadow-sm"
+                      : "text-gray-300 cursor-not-allowed"
+                  }`}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* ADD BUTTON */}
+              <button
+                onClick={() => onNavigate("expenses")}
+                className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-all"
+              >
+                <Plus size={16} />
+                <span className="hidden sm:inline">Add</span>{" "}
+                {/* Hide text on tiny screens */}
+              </button>
+            </div>
+          </div>
+
+          {/* RESPONSIVE HEIGHT: h-64 on mobile, h-80 on desktop */}
+          <div className="h-64 sm:h-80 w-full">
+            {visibleChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={metrics.chartData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  data={visibleChartData}
+                  margin={{ top: 10, right: 0, left: -20, bottom: 0 }} // Adjusted left margin
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -589,13 +650,13 @@ export default function Dashboard({ onNavigate }) {
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                    tick={{ fill: "#9CA3AF", fontSize: 11 }} // Smaller font
                     dy={10}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                    tick={{ fill: "#9CA3AF", fontSize: 11 }} // Smaller font
                     tickFormatter={(val) => `₱${val}`}
                   />
                   <Tooltip
@@ -605,6 +666,7 @@ export default function Dashboard({ onNavigate }) {
                       borderRadius: "8px",
                       border: "none",
                       color: "#fff",
+                      fontSize: "12px",
                       boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                     }}
                     itemStyle={{ color: "#fff" }}
@@ -614,13 +676,14 @@ export default function Dashboard({ onNavigate }) {
                     dataKey="amount"
                     fill="#10B981"
                     radius={[6, 6, 0, 0]}
-                    barSize={40}
+                    barSize={28} // Smaller bars for mobile elegance
                   />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-400 text-sm bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                No spending data for this period.
+              <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 text-sm bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                <Wallet size={32} className="mb-2 opacity-20" />
+                <p>No activity yet.</p>
               </div>
             )}
           </div>
@@ -698,7 +761,7 @@ export default function Dashboard({ onNavigate }) {
             {metrics.goals.map((goal) => {
               const percent = getProgress(
                 goal.current_amount,
-                goal.target_amount
+                goal.target_amount,
               );
               const IconObj = ICONS.find((i) => i.id === goal.icon) || ICONS[0];
 
